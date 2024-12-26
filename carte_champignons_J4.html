@@ -25,7 +25,7 @@
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             <style>
-                #map_0abed41288cea685426a9557b5e9a84d {
+                #map_a5be2d04bd9dc79c78d9ace197d4092b {
                     position: relative;
                     width: 100.0%;
                     height: 100.0%;
@@ -39,16 +39,16 @@
 <body>
     
     
-            <div class="folium-map" id="map_0abed41288cea685426a9557b5e9a84d" ></div>
+            <div class="folium-map" id="map_a5be2d04bd9dc79c78d9ace197d4092b" ></div>
         
 </body>
 <script>
     
     
-            var map_0abed41288cea685426a9557b5e9a84d = L.map(
-                "map_0abed41288cea685426a9557b5e9a84d",
+            var map_a5be2d04bd9dc79c78d9ace197d4092b = L.map(
+                "map_a5be2d04bd9dc79c78d9ace197d4092b",
                 {
-                    center: [44.0, 3.0],
+                    center: [46.0, 2.0],
                     crs: L.CRS.EPSG3857,
                     ...{
   "zoom": 6,
@@ -63,7 +63,7 @@
 
         
     
-            var tile_layer_3d6935e7fa086fd27fe7b879f7a8d034 = L.tileLayer(
+            var tile_layer_ded73a88df814c66893c2b93466f0ca6 = L.tileLayer(
                 "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                 {
   "minZoom": 0,
@@ -80,7 +80,24 @@
             );
         
     
-            tile_layer_3d6935e7fa086fd27fe7b879f7a8d034.addTo(map_0abed41288cea685426a9557b5e9a84d);
+            tile_layer_ded73a88df814c66893c2b93466f0ca6.addTo(map_a5be2d04bd9dc79c78d9ace197d4092b);
+        
+    
+            var marker_afc14fd1720342479cba1444f9625359 = L.marker(
+                [46.0, 2.0],
+                {
+}
+            ).addTo(map_a5be2d04bd9dc79c78d9ace197d4092b);
+        
+    
+            marker_afc14fd1720342479cba1444f9625359.bindTooltip(
+                `<div>
+                     Pixels valides : 0
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
         
 </script>
 </html>
