@@ -1,0 +1,7 @@
+rasterio
+numpy
+requests
+folium
+tqdm
+scipy
+python-dotenv
