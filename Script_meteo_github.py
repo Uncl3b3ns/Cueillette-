@@ -5,6 +5,7 @@ import requests
 import rasterio
 from tqdm import tqdm
 from scipy.spatial import cKDTree
+import time
 
 # Paramètres
 DAYS_BEFORE = 6
@@ -16,6 +17,7 @@ LAT_STEP, LON_STEP = 2.0, 2.0
 TEMP_MIN, TEMP_MAX = 5.0, 35.0
 PRECIP_MIN = 5.0
 WIND_MAX = 25.0
+API_CALL_DELAY = 0.1  # 100 ms entre les appels
 
 def create_france_grid():
     """Crée une grille de points pour la France."""
@@ -27,7 +29,7 @@ def download_weather_data(day):
     """Télécharge les données météo pour un jour donné."""
     points = create_france_grid()
     data = {}
-    for lat, lon in tqdm(points, desc=f"Téléchargement météo pour {day}"):
+    for lat, lon in tqdm(points, desc=f"Téléchargement météo pour {day}", ncols=80):
         url = "https://api.open-meteo.com/v1/forecast"
         params = {
             "latitude": lat,
@@ -37,9 +39,15 @@ def download_weather_data(day):
             "end_date": day.isoformat(),
             "timezone": "auto"
         }
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            data[(lat, lon)] = response.json().get("daily", {})
+        try:
+            response = requests.get(url, params=params, timeout=20)
+            response.raise_for_status()  # Vérifie les erreurs HTTP
+            json_data = response.json()
+            if "daily" in json_data:
+                data[(lat, lon)] = json_data["daily"]
+        except requests.exceptions.RequestException as e:
+            print(f"[ERREUR] Échec pour lat={lat}, lon={lon}: {e}")
+        time.sleep(API_CALL_DELAY)  # Pause pour limiter les appels/minute
     return data
 
 def interpolate_weather(data, raster_shape, bounds):
@@ -57,7 +65,8 @@ def interpolate_weather(data, raster_shape, bounds):
         return np.zeros(raster_shape)
 
     tree = cKDTree(np.c_[lats, lons])
-    grid_lats, grid_lons = np.linspace(bounds[1], bounds[3], raster_shape[0]), np.linspace(bounds[0], bounds[2], raster_shape[1])
+    grid_lats = np.linspace(bounds[1], bounds[3], raster_shape[0])
+    grid_lons = np.linspace(bounds[0], bounds[2], raster_shape[1])
     grid_x, grid_y = np.meshgrid(grid_lons, grid_lats)
     grid_points = np.c_[grid_y.ravel(), grid_x.ravel()]
 
@@ -69,5 +78,7 @@ if __name__ == "__main__":
     today = datetime.date.today()
     for offset in range(-DAYS_BEFORE, DAYS_AFTER + 1):
         day = today + datetime.timedelta(days=offset)
+        print(f"\n[Traitement] Téléchargement des données pour {day}...")
         weather_data = download_weather_data(day)
-        print(f"Traitement des données pour le {day} terminé.")
+        print(f"[Terminé] Téléchargement et validation des données pour le {day}.")
+
