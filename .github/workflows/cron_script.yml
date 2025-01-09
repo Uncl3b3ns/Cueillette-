@@ -31,4 +31,4 @@ jobs:
 
     # Étape 4 : Exécute le script Python
     - name: Run the script
-      run: python scripts\Script_meteo_github.py # Adaptez le chemin à votre fichier
+      run: python Script_meteo_github.py # Adaptez le chemin à votre fichier
