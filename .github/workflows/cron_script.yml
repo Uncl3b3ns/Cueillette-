@@ -1,34 +1,30 @@
-name: Run Daily Script
+name: Daily script
 
 on:
-  # Déclenche le workflow une fois par jour
-  schedule:
-    - cron: '0 12 * * *'  # 12:00 UTC tous les jours
-
-  # Permet d'exécuter le workflow manuellement
   workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'  # Tous les jours à 3h du matin
 
 jobs:
-  run-script:
-    runs-on: ubuntu-latest  # Utilise une machine virtuelle Ubuntu
+  build:
+    runs-on: ubuntu-latest
 
     steps:
-    # Étape 1 : Récupère le dépôt GitHub
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Check out
+        uses: actions/checkout@v3
 
-    # Étape 2 : Configure l'environnement Python
-    - name: Set up Python
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.8'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-    # Étape 3 : Installe les dépendances du projet
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-    # Étape 4 : Exécute le script Python
-    - name: Run the script
-      run: python Script_meteo_github.py # Adaptez le chemin à votre fichier
+      - name: Run script
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_GH_TOKEN }}
+        run: |
+          python daily_meteo.py
