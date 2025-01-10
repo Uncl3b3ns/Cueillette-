@@ -23,8 +23,9 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run script
+      - name: Run Script_meteo_github.py
         env:
-          GITHUB_TOKEN: ${{ secrets.MY_GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MY_GH_TOKEN }}  # Remplacez par le nom de votre secret
         run: |
-          python daily_meteo.py
+          python Script_meteo_github.py
+
