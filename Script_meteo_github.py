@@ -15,36 +15,85 @@ from rasterio.crs import CRS
 from tqdm import tqdm
 from dotenv import load_dotenv
 
+# ---------------------------------------------------------------------
+# 1) Logique "double requête" pour gros fichiers Google Drive
+# ---------------------------------------------------------------------
+
+def _get_confirm_token(response):
+    """
+    Parcourt les cookies à la recherche d'un paramètre download_warning_xxxx
+    qui renferme le token de confirmation pour GDrive.
+    """
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            return value
+    return None
+
+def _save_response_content(response, destination):
+    """
+    Écrit le contenu de la réponse HTTP (binaire) vers le fichier local,
+    en utilisant des chunks pour ne pas surcharger la mémoire.
+    """
+    CHUNK_SIZE = 32768  # 32 Ko
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk:  # éviter les chunks vides
+                f.write(chunk)
+
+def download_large_file_from_google_drive(file_id, destination):
+    """
+    Télécharge un fichier volumineux depuis Google Drive en gérant la page
+    de confirmation d'avertissement.
+
+    :param file_id: l'ID (valeur après 'id=' dans l'URL GDrive)
+    :param destination: chemin local où enregistrer le fichier
+    """
+    URL = "https://docs.google.com/uc?export=download"
+    session = requests.Session()
+
+    # 1) Première requête
+    response = session.get(URL, params={'id': file_id}, stream=True)
+    token = _get_confirm_token(response)
+
+    # 2) S'il y a un token, on refait la requête avec confirm=token
+    if token:
+        params = {'id': file_id, 'confirm': token}
+        response = session.get(URL, params=params, stream=True)
+
+    # 3) Écriture binaire du contenu
+    _save_response_content(response, destination)
+
+# ---------------------------------------------------------------------
+# 2) Notre fonction download_from_gdrive fait appel à la logique ci-dessus
+# ---------------------------------------------------------------------
+
 def download_from_gdrive(file_id, local_path):
     """
-    Télécharge un fichier depuis Google Drive (lien public)
-    en utilisant l'ID, et le stocke en local_path.
+    Vérifie si le fichier local existe déjà, sinon télécharge via la
+    logique "gros fichier Google Drive".
     """
     if os.path.exists(local_path):
         print(f"[SKIP] {local_path} existe déjà. Suppression si vous souhaitez re-télécharger.")
         return
 
-    url = f"https://drive.google.com/uc?export=download&id={file_id}"
-    print(f"[DOWNLOAD] {url} => {local_path}")
-
+    print(f"[DOWNLOAD] Google Drive ID={file_id} => {local_path}")
     try:
-        r = requests.get(url, allow_redirects=True, timeout=60)
-        r.raise_for_status()
-
-        with open(local_path, "wb") as f:
-            f.write(r.content)
+        download_large_file_from_google_drive(file_id, local_path)
         print(f"[OK] Téléchargé : {local_path}")
     except Exception as e:
-        print(f"[ERROR] Échec du téléchargement {url} : {e}")
+        print(f"[ERROR] Échec du téléchargement GDrive ID={file_id} : {e}")
 
-# Charger les variables d'environnement (pour un éventuel token GitHub, etc.)
+# ---------------------------------------------------------------------
+# 3) Chargement des variables d'environnement (GitHub Token, etc.)
+# ---------------------------------------------------------------------
+
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 REPO_OWNER   = "Uncl3b3ns"
 REPO_NAME    = "Cueillette-"
 
 # ---------------------------------------------------------------------
-# PARAMÈTRES GLOBAUX
+# 4) Paramètres globaux
 # ---------------------------------------------------------------------
 
 # IDs Google Drive pour vos rasters
@@ -84,6 +133,12 @@ LAT_MIN, LAT_MAX = 41.0, 51.0
 LON_MIN, LON_MAX = -5.0, 10.0
 LAT_STEP, LON_STEP = 2.0, 2.0
 
+# ---------------------------------------------------------------------
+# 5) Fonctions utilitaires
+# ---------------------------------------------------------------------
+
+import math
+
 def skip_if_exists(fpath):
     """Renvoie False si le fichier existe déjà => on skip la recréation."""
     if os.path.exists(fpath):
@@ -113,6 +168,10 @@ def create_france_grid(lat_min, lat_max, lon_min, lon_max, lat_step, lon_step):
         for lo in lon_vals:
             points.append((la, lo))
     return points
+
+# ---------------------------------------------------------------------
+# 6) Téléchargement Météo : Grille France 2°
+# ---------------------------------------------------------------------
 
 def download_weather_xml(day):
     """
@@ -216,6 +275,7 @@ def interpolate_weather(xml_path, ph_raster, var):
         return None
 
     # Interpolation IDW via cKDTree
+    from scipy.spatial import cKDTree
     tree_kd = cKDTree(np.c_[lats, lons])
     grid_x, grid_y = np.meshgrid(gx, gy)
     grid_points = np.c_[grid_y.ravel(), grid_x.ravel()]
@@ -229,6 +289,10 @@ def interpolate_weather(xml_path, ph_raster, var):
     interpolated[np.isnan(interpolated)] = 0
 
     return interpolated.astype(np.float32)
+
+# ---------------------------------------------------------------------
+# 7) Génération TIF + HTML
+# ---------------------------------------------------------------------
 
 def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
     """
@@ -262,7 +326,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
             else:
                 meteo_data[var].append(np.full(shape, np.nan, dtype=np.float32))
 
-    # Masque météo
+    # Appliquer les masques météo
     mask_meteo = np.ones(shape, dtype=bool)
     for var in weather_vars:
         stacked = np.stack(meteo_data[var], axis=0)
@@ -278,7 +342,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
             mask_var = np.ones(shape, dtype=bool)
         mask_meteo &= mask_var
 
-    # Combinaison avec pH + végétation
+    # Combiner avec pH + végétation
     try:
         with rasterio.open(ph_path) as ds_ph, rasterio.open(clc_path) as ds_clc:
             ph_data  = ds_ph.read(1)
@@ -307,7 +371,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
     percent = 100.0 * valid_pixels / total_pixels
     print(f"[INFO] Pixels valides: {valid_pixels}/{total_pixels} ({percent:.2f}%)")
 
-    # Ecriture TIF
+    # Écriture TIF
     try:
         with rasterio.open(ph_path) as ds_ph:
             prof = ds_ph.profile.copy()
@@ -323,7 +387,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
     except Exception as e:
         print(f"[ERROR] Erreur écriture TIF {tif_path}: {e}")
 
-    # Ecriture HTML
+    # Écriture HTML
     try:
         with rasterio.open(tif_path) as ds_tif:
             lb, bb, rb, tb = ds_tif.bounds
@@ -347,6 +411,10 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
         print(f"[OK] HTML => {html_path}")
     except Exception as e:
         print(f"[ERROR] Erreur création HTML {html_path}: {e}")
+
+# ---------------------------------------------------------------------
+# 8) Upload GitHub (optionnel)
+# ---------------------------------------------------------------------
 
 def github_upload_file(local_path,
                        repo_owner=REPO_OWNER,
@@ -398,20 +466,27 @@ def github_upload_file(local_path,
     except Exception as e:
         print(f"[ERROR] Erreur lors de l'upload GitHub du fichier {local_path}: {e}")
 
+# ---------------------------------------------------------------------
+# MAIN
+# ---------------------------------------------------------------------
+
 def main():
     print("[MAIN] Début du script Météo (GitHub)\n")
-    print(f"[DEBUG] GITHUB_TOKEN = {GITHUB_TOKEN[:5]}...") if GITHUB_TOKEN else print("[WARN] GITHUB_TOKEN non défini.")
+    if GITHUB_TOKEN:
+        print(f"[DEBUG] GITHUB_TOKEN = {GITHUB_TOKEN[:5]}...")
+    else:
+        print("[WARN] GITHUB_TOKEN non défini.")
 
-    # 1) Téléchargement des rasters
+    # 1) Télécharger les rasters volumineux depuis Google Drive
     download_from_gdrive(PH_FILE_ID, PH_FINAL)
     download_from_gdrive(CLC_FILE_ID, CLC_FINAL)
 
-    # Vérifier la présence des rasters
+    # 2) Vérifier la présence des rasters
     if not os.path.exists(PH_FINAL) or not os.path.exists(CLC_FINAL):
         print("[ERROR] Rasters introuvables après téléchargement.")
         return
 
-    # 2) Génération j0..j+7
+    # 3) Génération j0..j+7
     total_offsets = DAYS_AFTER + 1
     for offset in range(total_offsets):
         current_day = TODAY + datetime.timedelta(days=offset)
@@ -419,7 +494,7 @@ def main():
         html_path = os.path.join(METEO_RASTER_DIR, f"meteo_j{offset}.html")
         build_meteo_jX(offset, current_day, PH_FINAL, CLC_FINAL, tif_path, html_path)
 
-    # 3) (Optionnel) Upload sur GitHub
+    # 4) (Optionnel) Uploader les fichiers TIF/HTML
     for offset in range(total_offsets):
         hpath = os.path.join(METEO_RASTER_DIR, f"meteo_j{offset}.html")
         tpath = os.path.join(METEO_RASTER_DIR, f"meteo_j{offset}.tif")
