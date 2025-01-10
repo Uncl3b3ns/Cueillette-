@@ -5,3 +5,4 @@ folium
 tqdm
 scipy
 python-dotenv
+bs4
