@@ -15,10 +15,6 @@ from rasterio.crs import CRS
 from tqdm import tqdm
 from dotenv import load_dotenv
 
-# ---------------------------------------------------------------------
-# 0) Téléchargement Google Drive
-# ---------------------------------------------------------------------
-
 def download_from_gdrive(file_id, local_path):
     """
     Télécharge un fichier depuis Google Drive (lien public)
@@ -28,7 +24,6 @@ def download_from_gdrive(file_id, local_path):
         print(f"[SKIP] {local_path} existe déjà. Suppression si vous souhaitez re-télécharger.")
         return
 
-    # Lien de téléchargement direct
     url = f"https://drive.google.com/uc?export=download&id={file_id}"
     print(f"[DOWNLOAD] {url} => {local_path}")
 
@@ -52,15 +47,15 @@ REPO_NAME    = "Cueillette-"
 # PARAMÈTRES GLOBAUX
 # ---------------------------------------------------------------------
 
-# 1) Google Drive IDs pour vos rasters
+# IDs Google Drive pour vos rasters
 PH_FILE_ID  = "1-7go3Vp0q3AWKkVce9zeEEgbjdUUnwg7"  # pH final 3857
 CLC_FILE_ID = "1whOuyOGM0dWea0K-cFgEXmPIaDlG489I"  # CLC final 3857
 
-# 2) Chemins où on veut les stocker en local
+# Chemins des rasters en local
 PH_FINAL  = "./ph_final_3857.tif"
 CLC_FINAL = "./clc_final_3857.tif"
 
-# Fichier HTML cèpes (si vous voulez l’uploader, etc.)
+# Fichier HTML cèpes
 CEPE_HTML = "./ph_veg_cepes.html"
 
 # Paramètres cèpes
@@ -89,10 +84,6 @@ LAT_MIN, LAT_MAX = 41.0, 51.0
 LON_MIN, LON_MAX = -5.0, 10.0
 LAT_STEP, LON_STEP = 2.0, 2.0
 
-# ---------------------------------------------------------------------
-# 1) Fonctions Utilitaires
-# ---------------------------------------------------------------------
-
 def skip_if_exists(fpath):
     """Renvoie False si le fichier existe déjà => on skip la recréation."""
     if os.path.exists(fpath):
@@ -113,10 +104,6 @@ def log_raster_info(raster_path, description="Raster"):
             print("-------------------------\n")
     except Exception as e:
         print(f"[ERROR] Impossible d'ouvrir le raster {raster_path}: {e}")
-
-# ---------------------------------------------------------------------
-# 2) Téléchargement Météo : Grille France 2°
-# ---------------------------------------------------------------------
 
 def create_france_grid(lat_min, lat_max, lon_min, lon_max, lat_step, lon_step):
     lat_vals = np.arange(lat_min, lat_max + 0.0001, lat_step)
@@ -158,7 +145,7 @@ def download_weather_xml(day):
             time_list = daily.get("time", [])
             if not time_list:
                 continue
-            index = 0  # un seul jour
+            index = 0
             if index >= len(time_list):
                 continue
             weather_point = ET.SubElement(root, "Point", latitude=str(la), longitude=str(lo))
@@ -217,12 +204,10 @@ def interpolate_weather(xml_path, ph_raster, var):
     lons = np.array(lons)
     vals = np.array(vals)
 
-    # On ouvre le raster pH pour récupérer la grille
     try:
         with rasterio.open(ph_raster) as ds:
             w, h = ds.width, ds.height
             lb, bb, rb, tb = ds.bounds
-            # Convertir les bounds en WGS84
             lon_min, lat_min, lon_max, lat_max = transform_bounds(ds.crs, "EPSG:4326", lb, bb, rb, tb)
         gx = np.linspace(lon_min, lon_max, w)
         gy = np.linspace(lat_max, lat_min, h)
@@ -230,7 +215,7 @@ def interpolate_weather(xml_path, ph_raster, var):
         print(f"[ERROR] Impossible d'ouvrir le raster pH {ph_raster}: {e}")
         return None
 
-    # IDW via cKDTree
+    # Interpolation IDW via cKDTree
     tree_kd = cKDTree(np.c_[lats, lons])
     grid_x, grid_y = np.meshgrid(gx, gy)
     grid_points = np.c_[grid_y.ravel(), grid_x.ravel()]
@@ -245,21 +230,16 @@ def interpolate_weather(xml_path, ph_raster, var):
 
     return interpolated.astype(np.float32)
 
-# ---------------------------------------------------------------------
-# 3) Génération des TIF/HTML météo
-# ---------------------------------------------------------------------
-
 def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
     """
-    Génère les fichiers TIF et HTML pour un offset spécifique, basé sur
-    une fenêtre glissante de DAYS_BEFORE jours pour le 'jour courant'.
+    Génère les fichiers TIF et HTML pour un offset (j0..j+7) basé
+    sur DAYS_BEFORE jours de données (j-6..j).
     """
     print(f"[METEO] Traitement pour j{offset} => {tif_path}, {html_path}")
     window_start = current_day - datetime.timedelta(days=DAYS_BEFORE)
     weather_vars = ["temperature_2m_max", "temperature_2m_min", "precipitation_sum", "wind_speed_10m_max"]
     meteo_data = {var: [] for var in weather_vars}
 
-    # Lire la forme du raster pH une seule fois
     shape = None
     try:
         with rasterio.open(ph_path) as ds_ph:
@@ -268,7 +248,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
         print(f"[ERROR] Impossible d'ouvrir {ph_path}: {e}")
         return
 
-    # Téléchargement / Interpolation sur la période (j-DAYS_BEFORE..j)
+    # Téléchargement / Interpolation sur la période j-DAYS_BEFORE..j
     for day_offset in range(DAYS_BEFORE + 1):
         day = window_start + datetime.timedelta(days=day_offset)
         xml_path = os.path.join(METEO_DATA_DIR, f"meteo_{day}.xml")
@@ -282,7 +262,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
             else:
                 meteo_data[var].append(np.full(shape, np.nan, dtype=np.float32))
 
-    # Appliquer les masques sur la fenêtre glissante
+    # Masque météo
     mask_meteo = np.ones(shape, dtype=bool)
     for var in weather_vars:
         stacked = np.stack(meteo_data[var], axis=0)
@@ -298,7 +278,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
             mask_var = np.ones(shape, dtype=bool)
         mask_meteo &= mask_var
 
-    # Combiner avec pH + végétation
+    # Combinaison avec pH + végétation
     try:
         with rasterio.open(ph_path) as ds_ph, rasterio.open(clc_path) as ds_clc:
             ph_data  = ds_ph.read(1)
@@ -306,11 +286,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
             pH_nodata = ds_ph.nodata
 
             mask_clc = np.isin(clc_data, CLC_CEPES_CODES)
-            if pH_nodata is not None:
-                valid_ph = (ph_data != pH_nodata) & np.isfinite(ph_data)
-            else:
-                valid_ph = np.isfinite(ph_data)
-
+            valid_ph = (ph_data != pH_nodata) & np.isfinite(ph_data) if pH_nodata is not None else np.isfinite(ph_data)
             in_range_ph = (ph_data >= PH_MIN) & (ph_data <= PH_MAX)
             mask_ph_cond = np.where(valid_ph, in_range_ph, True)
 
@@ -331,7 +307,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
     percent = 100.0 * valid_pixels / total_pixels
     print(f"[INFO] Pixels valides: {valid_pixels}/{total_pixels} ({percent:.2f}%)")
 
-    # Écriture TIF
+    # Ecriture TIF
     try:
         with rasterio.open(ph_path) as ds_ph:
             prof = ds_ph.profile.copy()
@@ -347,7 +323,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
     except Exception as e:
         print(f"[ERROR] Erreur écriture TIF {tif_path}: {e}")
 
-    # Écriture HTML
+    # Ecriture HTML
     try:
         with rasterio.open(tif_path) as ds_tif:
             lb, bb, rb, tb = ds_tif.bounds
@@ -372,17 +348,13 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
     except Exception as e:
         print(f"[ERROR] Erreur création HTML {html_path}: {e}")
 
-# ---------------------------------------------------------------------
-# 4) Upload GitHub (optionnel)
-# ---------------------------------------------------------------------
-
 def github_upload_file(local_path,
                        repo_owner=REPO_OWNER,
                        repo_name=REPO_NAME,
                        token=GITHUB_TOKEN,
                        commit_message="Upload via script",
                        remote_path=""):
-    """Upload 'local_path' sur le repo GitHub dans 'remote_path'."""
+    """Upload local_path sur le repo GitHub dans remote_path."""
     if not os.path.exists(local_path):
         print(f"[WARN] Fichier introuvable: {local_path}")
         return
@@ -390,7 +362,7 @@ def github_upload_file(local_path,
         remote_path = os.path.basename(local_path)
 
     if not token:
-        print("[WARN] Pas de token GitHub configuré => upload ignoré.")
+        print("[WARN] Pas de token GitHub => upload ignoré.")
         return
 
     print(f"[GitHub] Upload '{local_path}' => '{repo_owner}/{repo_name}' dans '{remote_path}' ...")
@@ -426,32 +398,28 @@ def github_upload_file(local_path,
     except Exception as e:
         print(f"[ERROR] Erreur lors de l'upload GitHub du fichier {local_path}: {e}")
 
-# ---------------------------------------------------------------------
-# MAIN
-# ---------------------------------------------------------------------
-
 def main():
-    print("[MAIN] Début du script Météo (daily)\n")
+    print("[MAIN] Début du script Météo (GitHub)\n")
     print(f"[DEBUG] GITHUB_TOKEN = {GITHUB_TOKEN[:5]}...") if GITHUB_TOKEN else print("[WARN] GITHUB_TOKEN non défini.")
 
-    # 1) Télécharger (ou vérifier) ph_final_3857.tif et clc_final_3857.tif depuis GDrive
+    # 1) Téléchargement des rasters
     download_from_gdrive(PH_FILE_ID, PH_FINAL)
     download_from_gdrive(CLC_FILE_ID, CLC_FINAL)
 
-    # Vérifier que les rasters sont bien présents
+    # Vérifier la présence des rasters
     if not os.path.exists(PH_FINAL) or not os.path.exists(CLC_FINAL):
-        print("[ERROR] Les rasters ph_final_3857.tif ou clc_final_3857.tif n'ont pas été correctement téléchargés.")
+        print("[ERROR] Rasters introuvables après téléchargement.")
         return
 
     # 2) Génération j0..j+7
-    total_offsets = DAYS_AFTER + 1  # j0..j+7
+    total_offsets = DAYS_AFTER + 1
     for offset in range(total_offsets):
         current_day = TODAY + datetime.timedelta(days=offset)
         tif_path  = os.path.join(METEO_RASTER_DIR, f"meteo_j{offset}.tif")
         html_path = os.path.join(METEO_RASTER_DIR, f"meteo_j{offset}.html")
         build_meteo_jX(offset, current_day, PH_FINAL, CLC_FINAL, tif_path, html_path)
 
-    # 3) (Optionnel) Upload GitHub (HTML/TIF générés)
+    # 3) (Optionnel) Upload sur GitHub
     for offset in range(total_offsets):
         hpath = os.path.join(METEO_RASTER_DIR, f"meteo_j{offset}.html")
         tpath = os.path.join(METEO_RASTER_DIR, f"meteo_j{offset}.tif")
@@ -468,8 +436,7 @@ def main():
                 remote_path=f"meteo_j{offset}.tif"
             )
 
-    print("[MAIN] Fin du script Météo (daily).\n")
+    print("[MAIN] Fin du script Météo (GitHub).\n")
 
 if __name__ == "__main__":
     main()
-
