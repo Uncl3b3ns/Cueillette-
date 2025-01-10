@@ -16,13 +16,13 @@ from tqdm import tqdm
 from dotenv import load_dotenv
 
 # ---------------------------------------------------------------------
-# 1) Logique "double requête" pour gros fichiers Google Drive
+# 1) GESTION DES FICHIERS VOLUMINEUX GOOGLE DRIVE
 # ---------------------------------------------------------------------
 
 def _get_confirm_token(response):
     """
     Parcourt les cookies à la recherche d'un paramètre download_warning_xxxx
-    qui renferme le token de confirmation pour GDrive.
+    renfermant le token de confirmation pour GDrive.
     """
     for key, value in response.cookies.items():
         if key.startswith('download_warning'):
@@ -31,22 +31,19 @@ def _get_confirm_token(response):
 
 def _save_response_content(response, destination):
     """
-    Écrit le contenu de la réponse HTTP (binaire) vers le fichier local,
-    en utilisant des chunks pour ne pas surcharger la mémoire.
+    Écrit le contenu HTTP (binaire) dans un fichier local,
+    en chunks, pour éviter de surcharger la mémoire.
     """
-    CHUNK_SIZE = 32768  # 32 Ko
+    CHUNK_SIZE = 32768
     with open(destination, "wb") as f:
         for chunk in response.iter_content(CHUNK_SIZE):
-            if chunk:  # éviter les chunks vides
+            if chunk:
                 f.write(chunk)
 
 def download_large_file_from_google_drive(file_id, destination):
     """
     Télécharge un fichier volumineux depuis Google Drive en gérant la page
-    de confirmation d'avertissement.
-
-    :param file_id: l'ID (valeur après 'id=' dans l'URL GDrive)
-    :param destination: chemin local où enregistrer le fichier
+    'trop gros pour être analysé' via une double requête "confirm=token".
     """
     URL = "https://docs.google.com/uc?export=download"
     session = requests.Session()
@@ -55,22 +52,18 @@ def download_large_file_from_google_drive(file_id, destination):
     response = session.get(URL, params={'id': file_id}, stream=True)
     token = _get_confirm_token(response)
 
-    # 2) S'il y a un token, on refait la requête avec confirm=token
+    # 2) S'il y a un token, on relance la requête avec confirm=token
     if token:
         params = {'id': file_id, 'confirm': token}
         response = session.get(URL, params=params, stream=True)
 
-    # 3) Écriture binaire du contenu
+    # 3) Sauvegarde binaire
     _save_response_content(response, destination)
-
-# ---------------------------------------------------------------------
-# 2) Notre fonction download_from_gdrive fait appel à la logique ci-dessus
-# ---------------------------------------------------------------------
 
 def download_from_gdrive(file_id, local_path):
     """
     Vérifie si le fichier local existe déjà, sinon télécharge via la
-    logique "gros fichier Google Drive".
+    logique "fichier volumineux" (double requête).
     """
     if os.path.exists(local_path):
         print(f"[SKIP] {local_path} existe déjà. Suppression si vous souhaitez re-télécharger.")
@@ -84,7 +77,7 @@ def download_from_gdrive(file_id, local_path):
         print(f"[ERROR] Échec du téléchargement GDrive ID={file_id} : {e}")
 
 # ---------------------------------------------------------------------
-# 3) Chargement des variables d'environnement (GitHub Token, etc.)
+# 2) CHARGEMENT DES VARIABLES D'ENVIRONNEMENT (TOKEN, ETC.)
 # ---------------------------------------------------------------------
 
 load_dotenv()
@@ -93,7 +86,7 @@ REPO_OWNER   = "Uncl3b3ns"
 REPO_NAME    = "Cueillette-"
 
 # ---------------------------------------------------------------------
-# 4) Paramètres globaux
+# 3) PARAMÈTRES GLOBAUX
 # ---------------------------------------------------------------------
 
 # IDs Google Drive pour vos rasters
@@ -104,7 +97,7 @@ CLC_FILE_ID = "1whOuyOGM0dWea0K-cFgEXmPIaDlG489I"  # CLC final 3857
 PH_FINAL  = "./ph_final_3857.tif"
 CLC_FINAL = "./clc_final_3857.tif"
 
-# Fichier HTML cèpes
+# Fichier HTML cèpes (si vous en avez besoin)
 CEPE_HTML = "./ph_veg_cepes.html"
 
 # Paramètres cèpes
@@ -117,7 +110,7 @@ METEO_RASTER_DIR  = "./meteo_rasters"
 os.makedirs(METEO_DATA_DIR, exist_ok=True)
 os.makedirs(METEO_RASTER_DIR, exist_ok=True)
 
-DAYS_BEFORE = 6  # Nombre de jours avant j0 pour la fenêtre glissante
+DAYS_BEFORE = 6  # Nombre de jours avant j0
 DAYS_AFTER  = 7  # Nombre de jours après j0
 TODAY       = datetime.date.today()
 
@@ -134,10 +127,8 @@ LON_MIN, LON_MAX = -5.0, 10.0
 LAT_STEP, LON_STEP = 2.0, 2.0
 
 # ---------------------------------------------------------------------
-# 5) Fonctions utilitaires
+# 4) FONCTIONS UTILITAIRES
 # ---------------------------------------------------------------------
-
-import math
 
 def skip_if_exists(fpath):
     """Renvoie False si le fichier existe déjà => on skip la recréation."""
@@ -170,7 +161,7 @@ def create_france_grid(lat_min, lat_max, lon_min, lon_max, lat_step, lon_step):
     return points
 
 # ---------------------------------------------------------------------
-# 6) Téléchargement Météo : Grille France 2°
+# 5) TÉLÉCHARGEMENT MÉTÉO
 # ---------------------------------------------------------------------
 
 def download_weather_xml(day):
@@ -204,7 +195,7 @@ def download_weather_xml(day):
             time_list = daily.get("time", [])
             if not time_list:
                 continue
-            index = 0
+            index = 0  # un seul jour dans la liste
             if index >= len(time_list):
                 continue
             weather_point = ET.SubElement(root, "Point", latitude=str(la), longitude=str(lo))
@@ -226,7 +217,7 @@ def download_weather_xml(day):
 def interpolate_weather(xml_path, ph_raster, var):
     """
     Interpole les données météo depuis le fichier XML vers la grille du raster pH.
-    On suppose que ph_raster = pH_final, déjà en EPSG:3857.
+    On suppose que ph_raster est en EPSG:3857.
     """
     if not os.path.exists(xml_path):
         print(f"[WARN] Fichier XML introuvable: {xml_path}")
@@ -267,6 +258,7 @@ def interpolate_weather(xml_path, ph_raster, var):
         with rasterio.open(ph_raster) as ds:
             w, h = ds.width, ds.height
             lb, bb, rb, tb = ds.bounds
+            # Convertir en WGS84
             lon_min, lat_min, lon_max, lat_max = transform_bounds(ds.crs, "EPSG:4326", lb, bb, rb, tb)
         gx = np.linspace(lon_min, lon_max, w)
         gy = np.linspace(lat_max, lat_min, h)
@@ -275,7 +267,6 @@ def interpolate_weather(xml_path, ph_raster, var):
         return None
 
     # Interpolation IDW via cKDTree
-    from scipy.spatial import cKDTree
     tree_kd = cKDTree(np.c_[lats, lons])
     grid_x, grid_y = np.meshgrid(gx, gy)
     grid_points = np.c_[grid_y.ravel(), grid_x.ravel()]
@@ -291,19 +282,20 @@ def interpolate_weather(xml_path, ph_raster, var):
     return interpolated.astype(np.float32)
 
 # ---------------------------------------------------------------------
-# 7) Génération TIF + HTML
+# 6) GÉNÉRATION TIF + HTML
 # ---------------------------------------------------------------------
 
 def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
     """
-    Génère les fichiers TIF et HTML pour un offset (j0..j+7) basé
-    sur DAYS_BEFORE jours de données (j-6..j).
+    Génère les fichiers TIF et HTML pour un offset (j0..j+7) 
+    en se basant sur DAYS_BEFORE jours précédents.
     """
     print(f"[METEO] Traitement pour j{offset} => {tif_path}, {html_path}")
     window_start = current_day - datetime.timedelta(days=DAYS_BEFORE)
     weather_vars = ["temperature_2m_max", "temperature_2m_min", "precipitation_sum", "wind_speed_10m_max"]
     meteo_data = {var: [] for var in weather_vars}
 
+    # Vérifier la forme du raster pH
     shape = None
     try:
         with rasterio.open(ph_path) as ds_ph:
@@ -312,7 +304,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
         print(f"[ERROR] Impossible d'ouvrir {ph_path}: {e}")
         return
 
-    # Téléchargement / Interpolation sur la période j-DAYS_BEFORE..j
+    # Pour j-6..j => télécharger/interpoler la météo
     for day_offset in range(DAYS_BEFORE + 1):
         day = window_start + datetime.timedelta(days=day_offset)
         xml_path = os.path.join(METEO_DATA_DIR, f"meteo_{day}.xml")
@@ -326,7 +318,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
             else:
                 meteo_data[var].append(np.full(shape, np.nan, dtype=np.float32))
 
-    # Appliquer les masques météo
+    # Masque météo
     mask_meteo = np.ones(shape, dtype=bool)
     for var in weather_vars:
         stacked = np.stack(meteo_data[var], axis=0)
@@ -350,7 +342,11 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
             pH_nodata = ds_ph.nodata
 
             mask_clc = np.isin(clc_data, CLC_CEPES_CODES)
-            valid_ph = (ph_data != pH_nodata) & np.isfinite(ph_data) if pH_nodata is not None else np.isfinite(ph_data)
+            if pH_nodata is not None:
+                valid_ph = (ph_data != pH_nodata) & np.isfinite(ph_data)
+            else:
+                valid_ph = np.isfinite(ph_data)
+
             in_range_ph = (ph_data >= PH_MIN) & (ph_data <= PH_MAX)
             mask_ph_cond = np.where(valid_ph, in_range_ph, True)
 
@@ -413,7 +409,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, tif_path, html_path):
         print(f"[ERROR] Erreur création HTML {html_path}: {e}")
 
 # ---------------------------------------------------------------------
-# 8) Upload GitHub (optionnel)
+# 7) UPLOAD GITHUB (OPTIONNEL)
 # ---------------------------------------------------------------------
 
 def github_upload_file(local_path,
