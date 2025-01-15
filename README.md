@@ -1,61 +1,70 @@
-Cueillette- 🌿🍄
-Cueillette- is an interactive web application designed to help users identify optimal zones for foraging various fruits and vegetables based on soil pH, vegetation types, and meteorological conditions. By leveraging geospatial data and weather forecasts, Cueillette- provides dynamic maps that highlight favorable areas for different crops across the seasons.
+# Cueillette- 🌿🍄
 
-Table of Contents
-Features
-Demo
-Getting Started
-Prerequisites
-Installation
-Usage
-Application Workflow
-GitHub Actions
-Project Structure
-Extending the Application
-Security
-Contributing
-License
-Features
-Seasonal Selection: Choose fruits and vegetables categorized by seasons (Autumn, Winter, Spring, Summer).
-Dynamic Mapping: Select different map types to view soil pH, vegetation, and weather overlays.
-Weather Integration: View meteorological maps with indicators of favorable zones based on current and forecasted weather data.
-Interactive Interface: User-friendly dropdown menus and iframes to seamlessly switch between different views and data layers.
-Automated Updates: Daily data processing and map generation through GitHub Actions, ensuring up-to-date information.
-Demo
-Access the live application here.
+**Cueillette-** est une application web interactive conçue pour aider les utilisateurs à identifier les zones optimales pour la cueillette de divers fruits et légumes en fonction du pH du sol, des types de végétation et des conditions météorologiques. En tirant parti des données géospatiales et des prévisions météorologiques, Cueillette- fournit des cartes dynamiques mettant en évidence les zones favorables pour différentes cultures selon les saisons.
 
-Getting Started
-Follow these instructions to set up and run the application locally or understand its deployment process.
+## Table des Matières
 
-Prerequisites
-Python 3.9 or higher
-GitHub Account with access to create repositories and manage GitHub Actions
-Git installed on your local machine
-GitHub Pages enabled for your repository
-Installation
-Clone the Repository
+- [Fonctionnalités](#fonctionnalités)
+- [Démo](#démo)
+- [Installation](#installation)
+  - [Prérequis](#prérequis)
+  - [Étapes d'Installation](#étapes-dinstallation)
+- [Utilisation](#utilisation)
+  - [Flux de Travail de l'Application](#flux-de-travail-de-lapplication)
+  - [GitHub Actions](#github-actions)
+- [Structure du Projet](#structure-du-projet)
+- [Extension de l'Application](#extension-de-lapplication)
+- [Sécurité](#sécurité)
+- [Contribuer](#contribuer)
+- [Licence](#licence)
 
-bash
-Copier le code
-git clone https://github.com/Uncl3b3ns/Cueillette-.git
-cd Cueillette-
-Set Up Virtual Environment
+## Fonctionnalités
 
-It's recommended to use a virtual environment to manage dependencies.
+- **Sélection Saisonnière** : Choisissez des fruits et légumes catégorisés par saisons (Automne, Hiver, Printemps, Été).
+- **Cartographie Dynamique** : Sélectionnez différents types de cartes pour visualiser les niveaux de pH du sol, les types de végétation et les superpositions météorologiques.
+- **Intégration Météo** : Visualisez des cartes météorologiques avec des indicateurs de zones favorables basées sur les conditions météorologiques actuelles et prévues.
+- **Interface Interactive** : Menus déroulants conviviaux et iframes pour naviguer facilement entre différentes vues et couches de données.
+- **Mises à Jour Automatisées** : Traitement quotidien des données et génération de cartes via GitHub Actions, garantissant des informations à jour.
+
+## Démo
+
+Accédez à l'application en direct [ici](https://Uncl3b3ns.github.io/Cueillette-/).
+
+## Installation
+
+Suivez ces instructions pour configurer et exécuter l'application localement ou comprendre son processus de déploiement.
+
+### Prérequis
+
+- **Python 3.9** ou supérieur
+- **Compte GitHub** avec accès pour créer des dépôts et gérer GitHub Actions
+- **Git** installé sur votre machine locale
+- **GitHub Pages** activé pour votre dépôt
+
+### Étapes d'Installation
+
+1. **Cloner le Dépôt**
+
+   ```bash
+   git clone https://github.com/Uncl3b3ns/Cueillette-.git
+   cd Cueillette-
+Configurer un Environnement Virtuel
+
+Il est recommandé d'utiliser un environnement virtuel pour gérer les dépendances.
 
 bash
 Copier le code
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-Install Dependencies
+source venv/bin/activate  # Sur Windows : venv\Scripts\activate
+Installer les Dépendances
 
-Ensure you have a requirements.txt file with the necessary libraries.
+Assurez-vous d'avoir un fichier requirements.txt avec les bibliothèques nécessaires.
 
 bash
 Copier le code
 pip install --upgrade pip
 pip install -r requirements.txt
-Sample requirements.txt:
+Exemple de requirements.txt :
 
 plaintext
 Copier le code
@@ -67,48 +76,48 @@ beautifulsoup4
 scipy
 tqdm
 python-dotenv
-Configure Environment Variables
+Configurer les Variables d'Environnement
 
-Create a .env file in the root directory and add your GitHub token.
+Créez un fichier .env à la racine du projet et ajoutez votre token GitHub.
 
 env
 Copier le code
 GITHUB_TOKEN=your_github_token_here
-⚠️ Security Notice: Ensure that your .env file is never committed to the repository. Add it to your .gitignore if necessary.
+⚠️ Remarque de Sécurité : Assurez-vous que votre fichier .env n'est jamais commité dans le dépôt. Ajoutez-le à votre .gitignore si nécessaire.
 
-Set Up GitHub Secrets
+Configurer les Secrets GitHub
 
-Navigate to your GitHub repository.
-Go to Settings > Secrets and variables > Actions.
-Click on New repository secret and add your GitHub token with the name MY_GH_TOKEN.
-Usage
-Application Workflow
-Selection Interface
+Naviguez vers votre dépôt GitHub.
+Allez dans Settings > Secrets and variables > Actions.
+Cliquez sur New repository secret et ajoutez votre token GitHub avec le nom MY_GH_TOKEN.
+Utilisation
+Flux de Travail de l'Application
+Interface de Sélection
 
-Fruit/Vegetable Selection: Choose your desired crop categorized by season from the first dropdown menu.
-Map Type Selection: Select the type of map you want to view:
-pH + Végétation: Displays soil pH levels and vegetation types.
-pH + Végétation + Météo: Includes meteorological data overlays.
-Day Selection: If you choose the meteorological map type, select the specific day to view weather forecasts.
-Dynamic Map Display
+Sélection de Fruit/Légume : Choisissez votre culture désirée catégorisée par saison depuis le premier menu déroulant.
+Sélection du Type de Carte : Sélectionnez le type de carte que vous souhaitez visualiser :
+pH + Végétation : Affiche les niveaux de pH du sol et les types de végétation.
+pH + Végétation + Météo : Inclut les superpositions de données météorologiques.
+Sélection du Jour : Si vous choisissez le type de carte météorologique, sélectionnez le jour spécifique pour visualiser les prévisions météorologiques.
+Affichage Dynamique de la Carte
 
-Based on your selections, the application dynamically loads the corresponding HTML map in the iframe. If the meteorological option is selected, it also displays the number of favorable zones based on weather conditions.
+En fonction de vos sélections, l'application charge dynamiquement la carte HTML correspondante dans l'iframe. Si l'option météorologique est sélectionnée, elle affiche également le nombre de zones favorables basé sur les conditions météorologiques.
 
 GitHub Actions
-The application leverages GitHub Actions to automate daily data processing and map generation.
+L'application utilise GitHub Actions pour automatiser le traitement quotidien des données et la génération des cartes.
 
-Workflow Configuration
+Configuration du Workflow
 
-The workflow is defined in .github/workflows/daily_script.yml and is triggered daily at 3 AM UTC.
+Le workflow est défini dans .github/workflows/daily_script.yml et est déclenché quotidiennement à 3h du matin UTC.
 
 yaml
 Copier le code
 name: Daily script
 
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:  # Déclenchement manuel
   schedule:
-    - cron: '0 3 * * *'  # Runs daily at 3 AM UTC
+    - cron: '0 3 * * *'  # Exécute tous les jours à 3h UTC
 
 jobs:
   build:
@@ -130,16 +139,16 @@ jobs:
 
       - name: Run Script_meteo_github.py
         env:
-          GITHUB_TOKEN: ${{ secrets.MY_GH_TOKEN }}  # GitHub Token Secret
+          GITHUB_TOKEN: ${{ secrets.MY_GH_TOKEN }}  # Secret GitHub Token
         run: |
           python Script_meteo_github.py
-Workflow Steps
+Étapes du Workflow
 
-Checkout Repository: Retrieves the latest code from the repository.
-Set Up Python: Configures the Python environment.
-Install Dependencies: Installs required Python libraries.
-Run Python Script: Executes Script_meteo_github.py to process data and upload HTML files.
-Project Structure
+Checkout du Dépôt : Récupère le code le plus récent du dépôt.
+Configuration de Python : Configure l'environnement Python.
+Installation des Dépendances : Installe les bibliothèques Python nécessaires.
+Exécution du Script Python : Exécute Script_meteo_github.py pour traiter les données et uploader les fichiers HTML.
+Structure du Projet
 bash
 Copier le code
 Cueillette-/
@@ -158,78 +167,78 @@ Cueillette-/
 ├── Script_meteo_github.py
 ├── requirements.txt
 ├── README.md
-└── .env  # Not committed
-.github/workflows/daily_script.yml: Defines the GitHub Actions workflow.
-meteo_data/: Stores downloaded meteorological XML data.
-meteo_rasters/: Contains generated HTML maps for each crop and day.
-ph_final_3857.tif & clc_final_3857.tif: Raster files for soil pH and land cover classification.
-ph_veg_cepes.html: HTML map displaying soil pH and vegetation data.
-index.html: Main interface for user interaction.
-Script_meteo_github.py: Python script for data processing and map generation.
-requirements.txt: Lists Python dependencies.
-README.md: Project documentation.
-.env: Environment variables (not committed).
-Extending the Application
-To add new fruits or vegetables to the application:
+└── .env  # Non commité
+.github/workflows/daily_script.yml : Définit le workflow GitHub Actions.
+meteo_data/ : Stocke les données météorologiques XML téléchargées.
+meteo_rasters/ : Contient les cartes HTML générées pour chaque culture et jour.
+ph_final_3857.tif & clc_final_3857.tif : Fichiers raster pour le pH du sol et la classification de couverture terrestre.
+ph_veg_cepes.html : Carte HTML affichant les données pH et végétation.
+index.html : Interface principale pour l'interaction utilisateur.
+Script_meteo_github.py : Script Python pour le traitement des données et la génération des cartes.
+requirements.txt : Liste des dépendances Python.
+README.md : Documentation du projet.
+.env : Variables d'environnement (non commité).
+Extension de l'Application
+Pour ajouter de nouveaux fruits ou légumes à l'application :
 
-Update the Dropdown Menu
+Mettre à Jour le Menu Déroulant
 
-Modify the <optgroup> sections in index.html to include new crops under the appropriate season.
+Modifiez les sections <optgroup> dans index.html pour inclure les nouvelles cultures sous la saison appropriée.
 
 html
 Copier le code
 <optgroup label="Nouvelle Saison">
     <option value="nouvelle_culture">Nouvelle Culture</option>
-    <!-- Add more options as needed -->
+    <!-- Ajoutez plus d'options si nécessaire -->
 </optgroup>
-Generate Corresponding HTML Maps
+Générer les Cartes HTML Correspondantes
 
-Update Script_meteo_github.py to handle the new crops by generating ph_veg_<crop>.html and meteorological maps within meteo_rasters/<crop>/.
+Mettez à jour Script_meteo_github.py pour gérer les nouvelles cultures en générant ph_veg_<crop>.html et les cartes météorologiques dans meteo_rasters/<crop>/.
 
-Run the Script
+Exécuter le Script
 
-Execute the Python script manually or wait for the next scheduled GitHub Actions run to generate and upload the new maps.
+Exécutez le script Python manuellement ou attendez la prochaine exécution planifiée de GitHub Actions pour générer et uploader les nouvelles cartes.
 
-Security
-GitHub Token Management
-Revoke Exposed Tokens: If your GitHub token has been exposed publicly, immediately revoke it via GitHub Settings.
-Generate a New Token: Create a new Personal Access Token with the necessary permissions (repo scope) and update the repository secrets.
-Secure Storage: Store tokens securely using GitHub Secrets and never commit them to the repository.
-Best Practices
-Limit Token Permissions: Only grant the minimum necessary permissions to your GitHub tokens.
-Regularly Rotate Tokens: Periodically update your tokens to minimize security risks.
-Monitor Repository Access: Keep track of who has access to your repository and its secrets.
-Contributing
-Contributions are welcome! Please follow these guidelines:
+Sécurité
+Gestion des Tokens GitHub
+Révoquer les Tokens Exposés : Si votre token GitHub a été exposé publiquement, révoquez-le immédiatement via Paramètres GitHub.
+Générer un Nouveau Token : Créez un nouveau Personal Access Token avec les permissions nécessaires (repo scope) et mettez à jour les secrets du dépôt.
+Stockage Sécurisé : Stockez les tokens de manière sécurisée en utilisant les Secrets GitHub et ne les commitez jamais dans le dépôt.
+Bonnes Pratiques
+Limiter les Permissions des Tokens : Accordez uniquement les permissions minimales nécessaires à vos tokens GitHub.
+Rotation Régulière des Tokens : Mettez à jour périodiquement vos tokens pour minimiser les risques de sécurité.
+Surveiller l'Accès au Dépôt : Gardez un œil sur qui a accès à votre dépôt et à ses secrets.
+Contribuer
+Les contributions sont les bienvenues ! Veuillez suivre ces directives :
 
-Fork the Repository
+Forker le Dépôt
 
-Click the Fork button at the top-right corner of the repository page.
+Cliquez sur le bouton Fork en haut à droite de la page du dépôt.
 
-Create a New Branch
+Créer une Nouvelle Branche
 
 bash
 Copier le code
 git checkout -b feature/YourFeatureName
-Make Changes
+Faire des Modifications
 
-Implement your feature or fix bugs.
+Implémentez votre fonctionnalité ou corrigez des bugs.
 
-Commit Changes
+Commiter les Changements
 
 bash
 Copier le code
-git commit -m "Add your descriptive commit message"
-Push to the Branch
+git commit -m "Ajoute votre message de commit descriptif"
+Pousser la Branche
 
 bash
 Copier le code
 git push origin feature/YourFeatureName
-Open a Pull Request
+Ouvrir une Pull Request
 
-Navigate to the repository on GitHub and click Compare & pull request.
+Rendez-vous sur le dépôt GitHub et cliquez sur Compare & pull request.
 
-License
-This project is licensed under the MIT License.
+Licence
+Ce projet est sous licence MIT.
 
-Made with ❤️ by Uncl3b3ns
+Fait avec ❤️ par Uncl3b3ns
