@@ -243,10 +243,10 @@ def interpolate_weather(xml_path, ph_raster, var):
         return None
 
     try:
-        with rasterio.open(ph_raster) as ds:
-            w, h = ds.width, ds.height
-            lb, bb, rb, tb = ds.bounds
-            lon_min, lat_min, lon_max, lat_max = transform_bounds(ds.crs, "EPSG:4326", lb, bb, rb, tb)
+        with rasterio.open(ph_raster) as ds_ph:
+            w, h = ds_ph.width, ds_ph.height
+            lb, bb, rb, tb = ds_ph.bounds
+            lon_min, lat_min, lon_max, lat_max = transform_bounds(ds_ph.crs, "EPSG:4326", lb, bb, rb, tb)
         gx = np.linspace(lon_min, lon_max, w)
         gy = np.linspace(lat_max, lat_min, h)
     except Exception as e:
@@ -431,6 +431,26 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, out_html):
             colormap=lambda x: (0, 1, 0, x),  # Vert
             name=f"Météo7 j{offset}"
         ).add_to(m)
+
+        # Ajouter un marqueur ou une info pour les pixels favorables si nécessaire
+        folium.Marker(
+            location=[c_lat, c_lon],
+            popup=f"Zones favorables : {valid_pixels}",
+            icon=folium.Icon(color='blue', icon='info-sign')
+        ).add_to(m)
+
+        # ---------------------------------------------------------------------
+        # **Modification Importante : Ajouter un script pour envoyer le nombre de pixels favorables**
+        # ---------------------------------------------------------------------
+        m.get_root().html.add_child(folium.Element(f"""
+            <script>
+                window.onload = function() {{
+                    window.parent.postMessage({{ type: 'pixelCount', count: {valid_pixels} }}, 'https://uncl3b3ns.github.io');
+                }};
+            </script>
+        """))
+        # ---------------------------------------------------------------------
+
         m.save(out_html)
         print(f"[OK] HTML => {out_html}")
 
