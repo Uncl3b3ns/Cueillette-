@@ -445,7 +445,7 @@ def build_meteo_jX(offset, current_day, ph_path, clc_path, out_html):
         m.get_root().html.add_child(folium.Element(f"""
             <script>
                 window.onload = function() {{
-                    window.parent.postMessage({{ type: 'pixelCount', count: {valid_pixels} }}, 'https://uncl3b3ns.github.io');
+                    window.parent.postMessage({{ type: 'pixelCount', count: {valid_pixels} }}, 'https://uncl3b3ns.github.io/Cueillette-/');
                 }};
             </script>
         """))
