@@ -26,6 +26,11 @@
             height: 600px;
             margin-top: 20px;
         }
+        .pixel-count {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -33,13 +38,38 @@
     <h1>Meteo Cueillette</h1>
 
     <div class="dropdown-container">
-        <!-- Dropdown pour sélectionner le fruit/légume -->
+        <!-- Dropdown pour sélectionner le fruit/légume avec les saisons -->
         <label for="crop-select">Choisissez votre fruit/légume :</label>
         <select id="crop-select">
-            <option value="champignons">Champignons</option>
-            <option value="truffes">Truffes</option>
-            <option value="asperges_sauvages">Asperges Sauvages</option>
-            <!-- Ajoutez d'autres options ici -->
+            <optgroup label="Automne">
+                <option value="champignons">Champignons</option>
+                <option value="chataignes">Châtaignes</option>
+                <option value="baies_genievre">Baies de genièvre</option>
+                <option value="pignons_pin">Pignons de pin</option>
+                <option value="cynorhodon">Cynorhodon</option>
+            </optgroup>
+            <optgroup label="Hiver">
+                <option value="poireaux_sauvages">Poireaux sauvages</option>
+                <option value="arbouses">Arbouses</option>
+            </optgroup>
+            <optgroup label="Printemps">
+                <option value="orties">Orties</option>
+                <option value="ail_vignes">Ail des vignes</option>
+                <option value="asperges_sauvages">Asperges sauvages</option>
+                <option value="fenouil">Fenouil</option>
+                <option value="blettes">Blettes</option>
+                <option value="fraises_sauvages">Fraises sauvages</option>
+                <option value="thym">Thym</option>
+            </optgroup>
+            <optgroup label="Été">
+                <option value="mures_sauvages">Mûres sauvages</option>
+                <option value="noisettes">Noisettes</option>
+                <option value="origan">Origan</option>
+                <option value="romarin">Romarin</option>
+                <option value="framboises_sauvages">Framboises sauvages</option>
+                <option value="amandes">Amandes</option>
+                <option value="figues_barbarie">Figues de barbarie</option>
+            </optgroup>
         </select>
     </div>
 
@@ -63,6 +93,11 @@
     <!-- Iframe pour afficher la carte -->
     <iframe id="map-iframe" src="" allowfullscreen></iframe>
 
+    <!-- Zone d'affichage du nombre de pixels -->
+    <div class="pixel-count" id="pixel-count" style="display: none;">
+        Nombre de zones favorables : <span id="pixel-number"></span>
+    </div>
+
     <script>
         // Références aux éléments HTML
         const mapTypeSelect = document.getElementById('map-type-select');
@@ -70,6 +105,8 @@
         const daySelect = document.getElementById('day-select');
         const mapIframe = document.getElementById('map-iframe');
         const cropSelect = document.getElementById('crop-select');
+        const pixelCountDiv = document.getElementById('pixel-count');
+        const pixelNumberSpan = document.getElementById('pixel-number');
 
         // Fonction pour mettre à jour l'iframe en fonction des sélections
         function updateIframe() {
@@ -78,14 +115,16 @@
             let mapPath = '';
 
             if (mapType === 'ph_veg') {
-                // Exemple : ph_veg_cepes.html pour champignons
+                // Exemple : ph_veg_champignons.html pour champignons
                 // Adaptez le nom du fichier en fonction du crop sélectionné
                 mapPath = `ph_veg_${crop}.html`;
+                pixelCountDiv.style.display = 'none'; // Masquer le compteur de pixels
             } else if (mapType === 'ph_veg_meteo') {
                 const selectedDay = daySelect.value;
                 // Exemple : meteo_j0.html pour champignons, j0 correspondant à aujourd'hui
                 // Adaptez le chemin selon l'organisation de vos fichiers
                 mapPath = `meteo_rasters/${crop}/meteo_${selectedDay}.html`;
+                pixelCountDiv.style.display = 'block'; // Afficher le compteur de pixels
             }
 
             // Construire l'URL complète en fonction de GitHub Pages
@@ -116,6 +155,7 @@
                 populateDaySelect();
             } else {
                 daySelectContainer.style.display = 'none';
+                pixelCountDiv.style.display = 'none'; // Masquer le compteur de pixels
             }
             updateIframe();
         });
@@ -125,6 +165,22 @@
 
         // Événement lorsque le crop change
         cropSelect.addEventListener('change', updateIframe);
+
+        // Écouter les messages provenant des iframes
+        window.addEventListener('message', function(event) {
+            // Vérifier l'origine du message
+            const allowedOrigin = 'https://uncl3b3ns.github.io';
+            if (event.origin !== allowedOrigin) {
+                console.warn('Origine non autorisée:', event.origin);
+                return;
+            }
+
+            // Vérifier le type de message
+            if (event.data.type === 'pixelCount') {
+                const count = event.data.count;
+                pixelNumberSpan.textContent = count;
+            }
+        }, false);
 
         // Initialisation de la page
         window.onload = function() {
