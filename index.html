@@ -1,1 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Meteo Cueillette</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        h1 {
+            color: #2E8B57;
+        }
+        .dropdown-container {
+            margin: 20px 0;
+        }
+        select {
+            padding: 10px;
+            margin: 0 10px;
+            font-size: 16px;
+        }
+        iframe {
+            border: none;
+            width: 100%;
+            height: 600px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
 
+    <h1>Meteo Cueillette</h1>
+
+    <div class="dropdown-container">
+        <!-- Dropdown pour sélectionner le fruit/légume -->
+        <label for="crop-select">Choisissez votre fruit/légume :</label>
+        <select id="crop-select">
+            <option value="champignons">Champignons</option>
+            <option value="truffes">Truffes</option>
+            <option value="asperges_sauvages">Asperges Sauvages</option>
+            <!-- Ajoutez d'autres options ici -->
+        </select>
+    </div>
+
+    <div class="dropdown-container">
+        <!-- Dropdown pour sélectionner le type de carte -->
+        <label for="map-type-select">Type de carte :</label>
+        <select id="map-type-select">
+            <option value="ph_veg">pH + Végétation</option>
+            <option value="ph_veg_meteo">pH + Végétation + Météo</option>
+        </select>
+    </div>
+
+    <div class="dropdown-container" id="day-select-container" style="display: none;">
+        <!-- Dropdown pour sélectionner le jour (visible seulement si météo est sélectionnée) -->
+        <label for="day-select">Choisissez le jour :</label>
+        <select id="day-select">
+            <!-- Les options seront générées dynamiquement via JavaScript -->
+        </select>
+    </div>
+
+    <!-- Iframe pour afficher la carte -->
+    <iframe id="map-iframe" src="" allowfullscreen></iframe>
+
+    <script>
+        // Références aux éléments HTML
+        const mapTypeSelect = document.getElementById('map-type-select');
+        const daySelectContainer = document.getElementById('day-select-container');
+        const daySelect = document.getElementById('day-select');
+        const mapIframe = document.getElementById('map-iframe');
+        const cropSelect = document.getElementById('crop-select');
+
+        // Fonction pour mettre à jour l'iframe en fonction des sélections
+        function updateIframe() {
+            const crop = cropSelect.value;
+            const mapType = mapTypeSelect.value;
+            let mapPath = '';
+
+            if (mapType === 'ph_veg') {
+                // Exemple : ph_veg_cepes.html pour champignons
+                // Adaptez le nom du fichier en fonction du crop sélectionné
+                mapPath = `ph_veg_${crop}.html`;
+            } else if (mapType === 'ph_veg_meteo') {
+                const selectedDay = daySelect.value;
+                // Exemple : meteo_j0.html pour champignons, j0 correspondant à aujourd'hui
+                // Adaptez le chemin selon l'organisation de vos fichiers
+                mapPath = `meteo_rasters/${crop}/meteo_${selectedDay}.html`;
+            }
+
+            // Construire l'URL complète en fonction de GitHub Pages
+            const githubPagesURL = `https://Uncl3b3ns.github.io/Cueillette-/${mapPath}`;
+            mapIframe.src = githubPagesURL;
+        }
+
+        // Fonction pour générer les options du dropdown des jours
+        function populateDaySelect() {
+            daySelect.innerHTML = ''; // Réinitialiser les options
+            const today = new Date();
+            for (let i = 0; i <= 7; i++) {
+                const date = new Date();
+                date.setDate(today.getDate() + i);
+                const dayLabel = `J${i} (${date.toLocaleDateString('fr-FR')})`;
+                const dayValue = `j${i}`;
+                const option = document.createElement('option');
+                option.value = dayValue;
+                option.textContent = dayLabel;
+                daySelect.appendChild(option);
+            }
+        }
+
+        // Événement lorsque le type de carte change
+        mapTypeSelect.addEventListener('change', function() {
+            if (this.value === 'ph_veg_meteo') {
+                daySelectContainer.style.display = 'block';
+                populateDaySelect();
+            } else {
+                daySelectContainer.style.display = 'none';
+            }
+            updateIframe();
+        });
+
+        // Événement lorsque le jour change
+        daySelect.addEventListener('change', updateIframe);
+
+        // Événement lorsque le crop change
+        cropSelect.addEventListener('change', updateIframe);
+
+        // Initialisation de la page
+        window.onload = function() {
+            // Définir par défaut le premier crop
+            cropSelect.value = 'champignons';
+            // Définir par défaut le type de carte
+            mapTypeSelect.value = 'ph_veg';
+            // Mettre à jour l'iframe initialement
+            updateIframe();
+        };
+    </script>
+
+</body>
+</html>
