@@ -240,5 +240,3 @@ Rendez-vous sur le dépôt GitHub et cliquez sur Compare & pull request.
 
 Licence
 Ce projet est sous licence MIT.
-
-Fait avec ❤️ par Uncl3b3ns
