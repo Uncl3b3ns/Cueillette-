@@ -31,6 +31,13 @@
             font-weight: bold;
             color: #333;
         }
+        #wip-message {
+            display: none;
+            margin-top: 20px;
+            font-size: 24px;
+            color: #FF4500;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -93,6 +100,9 @@
     <!-- Iframe pour afficher la carte -->
     <iframe id="map-iframe" src="" allowfullscreen></iframe>
 
+    <!-- Zone d'affichage du message "Work in progress" -->
+    <div id="wip-message">Work in progress</div>
+
     <!-- Zone d'affichage du nombre de pixels -->
     <div class="pixel-count" id="pixel-count" style="display: none;">
         Nombre de zones favorables : <span id="pixel-number"></span>
@@ -107,23 +117,36 @@
         const cropSelect = document.getElementById('crop-select');
         const pixelCountDiv = document.getElementById('pixel-count');
         const pixelNumberSpan = document.getElementById('pixel-number');
+        const wipMessage = document.getElementById('wip-message');
 
-        // Fonction pour mettre à jour l'iframe en fonction des sélections
+        // Fonction pour mettre à jour l'iframe ou afficher "Work in progress"
         function updateIframe() {
             const crop = cropSelect.value;
             const mapType = mapTypeSelect.value;
+
+            if (crop !== 'champignons') {
+                // Afficher "Work in progress" et masquer l'iframe et le compteur de pixels
+                mapIframe.style.display = 'none';
+                pixelCountDiv.style.display = 'none';
+                wipMessage.style.display = 'block';
+                return;
+            } else {
+                // Masquer "Work in progress" et afficher l'iframe
+                wipMessage.style.display = 'none';
+                mapIframe.style.display = 'block';
+            }
+
             let mapPath = '';
 
             if (mapType === 'ph_veg') {
-                // Exemple : ph_veg_champignons.html pour champignons
-                // Adaptez le nom du fichier en fonction du crop sélectionné
-                mapPath = `ph_veg_${crop}.html`;
+                // Gérer l'exception pour les cèpes
+                const fileCrop = crop === 'champignons' ? 'cepes' : crop;
+                mapPath = `ph_veg_${fileCrop}.html`;
                 pixelCountDiv.style.display = 'none'; // Masquer le compteur de pixels
             } else if (mapType === 'ph_veg_meteo') {
                 const selectedDay = daySelect.value;
-                // Exemple : meteo_j0.html pour champignons, j0 correspondant à aujourd'hui
-                // Adaptez le chemin selon l'organisation de vos fichiers
-                mapPath = `meteo_rasters/${crop}/meteo_${selectedDay}.html`;
+                // Utiliser les fichiers météo au format meteo_j0.html, meteo_j1.html, etc.
+                mapPath = `meteo_j${selectedDay.substring(1)}.html`;
                 pixelCountDiv.style.display = 'block'; // Afficher le compteur de pixels
             }
 
