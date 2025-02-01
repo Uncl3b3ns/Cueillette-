@@ -29,3 +29,5 @@ jobs:
         run: |
           python Script_meteo_github.py
 
+      - name: Pause pour éviter le conflit de build
+        run: sleep 60  # Pause de 60 secondes avant le prochain déclenchement
