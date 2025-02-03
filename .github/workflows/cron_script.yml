@@ -25,9 +25,17 @@ jobs:
 
       - name: Run Script_meteo_github.py
         env:
-          GITHUB_TOKEN: ${{ secrets.MY_GH_TOKEN }}  # Remplacez par le nom de votre secret
+          GITHUB_TOKEN: ${{ secrets.MY_GH_TOKEN }}
         run: |
           python Script_meteo_github.py
 
-      - name: Pause pour éviter le conflit de build
-        run: sleep 120  # Pause de 120 secondes avant le prochain déclenchement
+      # ⏳ Ajouter un délai de 30s pour éviter un conflit entre le script et le build
+      - name: Pause avant le build
+        run: sleep 30
+
+      # 🚀 Forcer le build GitHub Pages UNE SEULE FOIS après le script
+      - name: Déclencher le déploiement GitHub Pages
+        run: |
+          curl -X POST -u "Uncl3b3ns:${{ secrets.MY_GH_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/Uncl3b3ns/Cueillette-/pages/builds
