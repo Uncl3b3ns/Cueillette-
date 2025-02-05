@@ -23,19 +23,8 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Script_meteo_github.py
+      - name: Run single-commit script
         env:
-          GITHUB_TOKEN: ${{ secrets.MY_GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MY_GH_TOKEN }} 
         run: |
           python Script_meteo_github.py
-
-      # ⏳ Pause de sécurité pour s'assurer que tout est bien poussé
-      - name: Pause avant le build
-        run: sleep 60  # Augmenté pour éviter toute collision
-
-      # 🚀 Forcer un SEUL build GitHub Pages après la fin du script
-      - name: Forcer le build GitHub Pages
-        run: |
-          curl -X POST -H "Authorization: token ${{ secrets.MY_GH_TOKEN }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/Uncl3b3ns/Cueillette-/pages/builds
