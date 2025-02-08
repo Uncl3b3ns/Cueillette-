@@ -3,15 +3,27 @@ name: Daily script
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 3 * * *'  # Tous les jours à 3h du matin
+    - cron: '0 3 * * *'
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    # Ajoutez ceci :
+    permissions:
+      contents: write  # Autorise le push et la création/maj de contenu
+
     steps:
       - name: Check out
         uses: actions/checkout@v3
+        with:
+          persist-credentials: false  # on va utiliser notre propre config
+      - name: Setup Git credentials
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          # Ceci permet d'utiliser le GITHUB_TOKEN pour push
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Uncl3b3ns/Cueillette-.git
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -23,8 +35,8 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run single-commit script
+      - name: Run script single commit
         env:
-          GITHUB_TOKEN: ${{ secrets.MY_GH_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python Script_meteo_github.py
