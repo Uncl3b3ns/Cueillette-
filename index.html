@@ -125,7 +125,7 @@
             const mapType = mapTypeSelect.value;
 
             if (crop !== 'champignons') {
-                // Afficher "Work in progress" et masquer l'iframe et le compteur de pixels
+                // Afficher "Work in progress" et masquer l'iframe + compteur
                 mapIframe.style.display = 'none';
                 pixelCountDiv.style.display = 'none';
                 wipMessage.style.display = 'block';
@@ -139,25 +139,26 @@
             let mapPath = '';
 
             if (mapType === 'ph_veg') {
-                // Gérer l'exception pour les cèpes
-                const fileCrop = crop === 'champignons' ? 'cepes' : crop;
-                mapPath = `ph_veg_${fileCrop}.html`;
+                // Gérer l'exception pour "champignons" => "cepes"
+                const fileCrop = (crop === 'champignons') ? 'cepes' : crop;
+                mapPath = `ph_veg_${fileCrop}.html`;  // dans la racine
                 pixelCountDiv.style.display = 'none'; // Masquer le compteur de pixels
             } else if (mapType === 'ph_veg_meteo') {
                 const selectedDay = daySelect.value;
-                // Utiliser les fichiers météo au format meteo_j0.html, meteo_j1.html, etc.
-                mapPath = `meteo_j${selectedDay.substring(1)}.html`;
-                pixelCountDiv.style.display = 'block'; // Afficher le compteur de pixels
+                // Utiliser les fichiers dans meteo_rasters/meteo_j0.html, etc.
+                const dayIndex = selectedDay.substring(1); // ex. "j0" -> "0"
+                mapPath = `meteo_rasters/meteo_j${dayIndex}.html`;
+                pixelCountDiv.style.display = 'block'; // Afficher le compteur
             }
 
-            // Construire l'URL complète en fonction de GitHub Pages
+            // Construire l'URL complète sur GitHub Pages
             const githubPagesURL = `https://Uncl3b3ns.github.io/Cueillette-/${mapPath}`;
             mapIframe.src = githubPagesURL;
         }
 
         // Fonction pour générer les options du dropdown des jours
         function populateDaySelect() {
-            daySelect.innerHTML = ''; // Réinitialiser les options
+            daySelect.innerHTML = ''; // reset
             const today = new Date();
             for (let i = 0; i <= 7; i++) {
                 const date = new Date();
@@ -171,27 +172,26 @@
             }
         }
 
-        // Événement lorsque le type de carte change
+        // Événement: type de carte change
         mapTypeSelect.addEventListener('change', function() {
             if (this.value === 'ph_veg_meteo') {
                 daySelectContainer.style.display = 'block';
                 populateDaySelect();
             } else {
                 daySelectContainer.style.display = 'none';
-                pixelCountDiv.style.display = 'none'; // Masquer le compteur de pixels
+                pixelCountDiv.style.display = 'none';
             }
             updateIframe();
         });
 
-        // Événement lorsque le jour change
+        // Événement: jour change
         daySelect.addEventListener('change', updateIframe);
 
-        // Événement lorsque le crop change
+        // Événement: fruit/légume change
         cropSelect.addEventListener('change', updateIframe);
 
-        // Écouter les messages provenant des iframes
+        // Réception des messages depuis les iframes
         window.addEventListener('message', function(event) {
-            // Vérifier l'origine du message
             const allowedOrigin = 'https://uncl3b3ns.github.io';
             if (event.origin !== allowedOrigin) {
                 console.warn('Origine non autorisée:', event.origin);
@@ -209,7 +209,7 @@
         window.onload = function() {
             // Définir par défaut le premier crop
             cropSelect.value = 'champignons';
-            // Définir par défaut le type de carte
+            // Par défaut: pH+Vég
             mapTypeSelect.value = 'ph_veg';
             // Mettre à jour l'iframe initialement
             updateIframe();
